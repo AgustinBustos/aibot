@@ -543,10 +543,43 @@ if __name__ == '__main__':
 
     driver.get(r"https://www.linkedin.com/jobs/search/?currentJobId=3847620136&distance=25&f_TPR=r86400&geoId=100446943&keywords=Cient%C3%ADfico%20de%20datos&origin=JOB_SEARCH_PAGE_JOB_FILTER&refresh=true")
     html = driver.page_source
+    # with open("example.html", "w") as file:
+    #     file.write(html)
+    # driver.execute_script("window.scrollTo(0,document.body.scrollHeight)")
+    # scroll_page=0
+    # while scroll_page < 4000:
+    #         driver.execute_script("window.scrollTo(0," + str(scroll_page) + " );")
+    #         scroll_page += 200
+    #         time.sleep(1)
 
-    simplified_html=html_remover(html,full=True)
+    footer = driver.find_element(By.TAG_NAME, "footer")
+    delta_y = 2
+    ActionChains(driver)\
+        .scroll_to_element(footer)\
+        .scroll_by_amount(0, 2)\
+        .perform()
+    # ActionChains(driver)\
+    #     .scroll_to_element(footer)\
+    #     .perform()
+
+    selected_html=driver.find_element(By.CSS_SELECTOR, name_of_class_for_list_of_jobs)
+    time.sleep(10000)
+    # selected_html.send_keys(Keys.PAGE_DOWN)
+    # time.sleep(2)
+    # selected_html.send_keys(Keys.PAGE_DOWN)
+    # ActionChains(driver)\
+    #     .scroll_to_element(selected_html)\
+    #     .perform()
+    # time.sleep(10000)
+    html=selected_html.get_attribute('outerHTML')
+    # list_of_jobs=html_remover(list_of_jobs)
+    # print(get_job_links(list_of_jobs))
+
+    # keep only if it has href
+    simplified_html=html_remover(selected_html,full=True)
+    print(len(simplified_html))
  
-    print(get_job_links(simplified_html))
+    # print(get_job_links(simplified_html))
 
 
  
