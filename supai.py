@@ -23,7 +23,8 @@ from selenium.webdriver.common.action_chains import ActionChains
 from reducehtml import html_remover
 import openai
 from openai_functions import get_job_links
-
+from selenium.webdriver.common.actions.wheel_input import ScrollOrigin
+import pandas as pd
 
 
 log = logging.getLogger(__name__)
@@ -542,45 +543,43 @@ if __name__ == '__main__':
 
 
     driver.get(r"https://www.linkedin.com/jobs/search/?currentJobId=3847620136&distance=25&f_TPR=r86400&geoId=100446943&keywords=Cient%C3%ADfico%20de%20datos&origin=JOB_SEARCH_PAGE_JOB_FILTER&refresh=true")
-    html = driver.page_source
-    # with open("example.html", "w") as file:
-    #     file.write(html)
-    # driver.execute_script("window.scrollTo(0,document.body.scrollHeight)")
-    # scroll_page=0
-    # while scroll_page < 4000:
-    #         driver.execute_script("window.scrollTo(0," + str(scroll_page) + " );")
-    #         scroll_page += 200
-    #         time.sleep(1)
+    all_links=[]
+    for page_number in range(4):
+        html = driver.page_source
 
-    footer = driver.find_element(By.TAG_NAME, "footer")
-    delta_y = 2
-    ActionChains(driver)\
-        .scroll_to_element(footer)\
-        .scroll_by_amount(0, 2)\
-        .perform()
-    # ActionChains(driver)\
-    #     .scroll_to_element(footer)\
-    #     .perform()
+        
 
-    selected_html=driver.find_element(By.CSS_SELECTOR, name_of_class_for_list_of_jobs)
-    time.sleep(10000)
-    # selected_html.send_keys(Keys.PAGE_DOWN)
-    # time.sleep(2)
-    # selected_html.send_keys(Keys.PAGE_DOWN)
-    # ActionChains(driver)\
-    #     .scroll_to_element(selected_html)\
-    #     .perform()
-    # time.sleep(10000)
-    html=selected_html.get_attribute('outerHTML')
-    # list_of_jobs=html_remover(list_of_jobs)
-    # print(get_job_links(list_of_jobs))
-
-    # keep only if it has href
-    simplified_html=html_remover(selected_html,full=True)
-    print(len(simplified_html))
- 
-    # print(get_job_links(simplified_html))
+        selected_html=driver.find_element(By.CSS_SELECTOR, name_of_class_for_list_of_jobs)
+        scroll_origin = ScrollOrigin.from_element(selected_html)
+        footer_visible=True
+        while footer_visible:
+            ActionChains(driver)\
+                .scroll_from_origin(scroll_origin, 0, 200)\
+                .perform()
+            time.sleep(1)
+            if (driver.find_element(By.TAG_NAME, "footer").text) != '':
+                print(driver.find_element(By.TAG_NAME, "footer").text)
+                print('---------------')
+                footer_visible=False
 
 
- 
-    time.sleep(10000)
+        selected_html=driver.find_element(By.CSS_SELECTOR, name_of_class_for_list_of_jobs)
+        html=selected_html.get_attribute('outerHTML')
+
+        # keep only if it has href
+        simplified_html=html_remover(html,full=True)
+        # print(len(simplified_html))
+        
+        found_jobs=get_job_links(simplified_html)
+
+        all_links=all_links+[driver.find_element(By.CSS_SELECTOR, f"a[href*='{i}']").get_attribute('href') for i in found_jobs]
+        pd.Series(all_links).to_csv('links_to_use_later.csv')
+        # time.sleep(10000)
+        driver.find_element(By.CSS_SELECTOR, f"button[aria-label='Page {page_number+2}']").click()
+        time.sleep(2)
+    pd.Series(all_links).to_csv('links_to_use_later.csv')
+
+
+
+    
+        
