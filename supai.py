@@ -544,15 +544,9 @@ if __name__ == '__main__':
     driver.get(r"https://www.linkedin.com/jobs/search/?currentJobId=3847620136&distance=25&f_TPR=r86400&geoId=100446943&keywords=Cient%C3%ADfico%20de%20datos&origin=JOB_SEARCH_PAGE_JOB_FILTER&refresh=true")
     html = driver.page_source
 
-    # list_of_jobs=driver.find_element(By.CSS_SELECTOR, name_of_class_for_list_of_jobs).get_attribute('outerHTML')
-    # list_of_jobs=html_remover(list_of_jobs)
-    # print(get_job_links(list_of_jobs))
-
-    # keep only if it has href
-    simplified_tml=html_remover(html,full=True)
-    print(simplified_tml)
-    print(len(html))
-    print(len(simplified_tml))
+    simplified_html=html_remover(html,full=True)
+ 
+    print(get_job_links(simplified_html))
 
 
  

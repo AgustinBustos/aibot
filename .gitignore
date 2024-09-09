@@ -2,3 +2,5 @@ venv
 __pycache__
 logs
 keys.py
+example.html
+cleaned.html
