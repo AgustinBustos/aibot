@@ -30,8 +30,16 @@ import pandas as pd
 log = logging.getLogger(__name__)
 # driver = webdriver.Chrome(ChromeDriverManager().install())
 options = uc.ChromeOptions()
-options.add_argument(r"--user-data-dir=/home/agus/.config/google-chrome") #e.g. C:\Users\You\AppData\Local\Google\Chrome\User Data
-options.add_argument(r'--profile-directory=Default') #e.g. Profile 3
+options.add_argument(r"--user-data-dir=C:\Users\TheQwertyPhoenix\AppData\Local\Google\Chrome\User Data") #e.g. C:\Users\You\AppData\Local\Google\Chrome\User Data
+options.add_argument(r'--profile-directory=Profile 1') #e.g. Profile 3
+options.add_argument("--start-maximized")
+options.add_argument("--ignore-certificate-errors")
+options.add_argument('--no-sandbox')
+options.add_argument("--disable-extensions")
+
+# Disable webdriver flags or you will be easily detectable
+options.add_argument("--disable-blink-features")
+options.add_argument("--disable-blink-features=AutomationControlled")
 driver=uc.Chrome(options=options)
 # driver = webdriver.Chrome(ChromeDriverManager().install())
 
@@ -51,9 +59,25 @@ def setupLogger() -> None:
     c_handler.setFormatter(c_format)
     log.addHandler(c_handler)
 
-
-
-
+def avoid_lock() -> None:
+        x, _ = pyautogui.position()
+        pyautogui.moveTo(x + 200, pyautogui.position().y, duration=1.0)
+        pyautogui.moveTo(x, pyautogui.position().y, duration=0.5)
+        pyautogui.keyDown('ctrl')
+        pyautogui.press('esc')
+        pyautogui.keyUp('ctrl')
+        time.sleep(0.5)
+        pyautogui.press('esc')
+def load_page(driver, sleep=1):
+        scroll_page = 0
+        while scroll_page < 4000:
+            driver.execute_script("window.scrollTo(0," + str(scroll_page) + " );")
+            scroll_page += 200
+            time.sleep(sleep)
+def fill_data(driver) -> None:
+    driver.set_window_size(1, 1)
+    driver.set_window_position(2000, 2000)
+    driver.maximize_window()
 class EasyApplyBot:
     setupLogger()
     # MAX_SEARCH_TIME is 10 hours by default, feel free to modify it
@@ -545,22 +569,26 @@ if __name__ == '__main__':
     driver.get(r"https://www.linkedin.com/jobs/search/?currentJobId=3847620136&distance=25&f_TPR=r86400&geoId=100446943&keywords=Cient%C3%ADfico%20de%20datos&origin=JOB_SEARCH_PAGE_JOB_FILTER&refresh=true")
     all_links=[]
     for page_number in range(4):
+        avoid_lock()
+        fill_data(driver)
         html = driver.page_source
+        # time.sleep(100000)
 
         
 
         selected_html=driver.find_element(By.CSS_SELECTOR, name_of_class_for_list_of_jobs)
         scroll_origin = ScrollOrigin.from_element(selected_html)
-        footer_visible=True
-        while footer_visible:
+        # footer_visible=True
+        for i in range(30):
             ActionChains(driver)\
                 .scroll_from_origin(scroll_origin, 0, 200)\
                 .perform()
             time.sleep(1)
-            if (driver.find_element(By.TAG_NAME, "footer").text) != '':
-                print(driver.find_element(By.TAG_NAME, "footer").text)
-                print('---------------')
-                footer_visible=False
+            # if (driver.find_element(By.TAG_NAME, "footer").text) != '':
+            #     print(driver.find_element(By.TAG_NAME, "footer").text)
+            #     print('---------------')
+            #     footer_visible=False
+        # load_page(driver)
 
 
         selected_html=driver.find_element(By.CSS_SELECTOR, name_of_class_for_list_of_jobs)
@@ -572,7 +600,16 @@ if __name__ == '__main__':
         
         found_jobs=get_job_links(simplified_html)
 
-        all_links=all_links+[driver.find_element(By.CSS_SELECTOR, f"a[href*='{i}']").get_attribute('href') for i in found_jobs]
+        to_add=[]
+        for i in found_jobs:
+            try:
+                to_add.append(driver.find_element(By.CSS_SELECTOR, f"a[href*='{i}']").get_attribute('href'))
+            except:
+                to_add.append(i)
+
+
+
+        all_links=all_links+to_add
         pd.Series(all_links).to_csv('links_to_use_later.csv')
         # time.sleep(10000)
         driver.find_element(By.CSS_SELECTOR, f"button[aria-label='Page {page_number+2}']").click()
