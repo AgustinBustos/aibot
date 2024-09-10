@@ -13,13 +13,17 @@ from reducehtml import html_remover
 import openai
 from openai_functions import get_job_links
 import pandas as pd
+import datetime
 
 name_of_class_for_scroll_down=".jobs-search-results-list"
 user_data_dir=r"C:\Users\TheQwertyPhoenix\AppData\Local\Google\Chrome\User Data"
 profile_directory='Profile 1'
-url=r"https://www.linkedin.com/jobs/search/?currentJobId=3847620136&distance=25&f_TPR=r86400&geoId=100446943&keywords=Cient%C3%ADfico%20de%20datos&origin=JOB_SEARCH_PAGE_JOB_FILTER&refresh=true"
+
+# url="https://www.linkedin.com/jobs/search/?f_LF=f_AL&keywords="+position+location+"&start="+str(jobs_per_page)
+url=r"https://www.linkedin.com/jobs/search/?distance=25&f_AL=true&f_TPR=r86400&geoId=100446943&keywords=Cient%C3%ADfico%20de%20datos&origin=JOB_SEARCH_PAGE_JOB_FILTER&refresh=true"
 next_page_button_selector=r"button[aria-label='Page "
 
+done_in=datetime.datetime.now()
 def open_browser(user_data_dir,profile_directory,url):
 # log = logging.getLogger(__name__)
 # driver = webdriver.Chrome(ChromeDriverManager().install())
@@ -86,7 +90,7 @@ if __name__ == '__main__':
     driver=open_browser(user_data_dir,profile_directory,url)
 
     all_links=[]
-    for page_number in range(4):
+    for page_number in range(1):
         #startup 
         avoid_lock()
         fill_data(driver)
@@ -114,12 +118,17 @@ if __name__ == '__main__':
             except:
                 to_add.append(i)
         all_links=all_links+to_add
-        pd.Series(all_links).to_csv('links_to_use_later.csv')
+        to_export=pd.DataFrame([i.dict() for i in all_links])
+        to_export['time']=done_in
+        to_export.to_csv('links_to_use_later.csv')
 
         #next page
         driver.find_element(selenium.webdriver.common.by.By.CSS_SELECTOR, f"{next_page_button_selector}{page_number+2}']").click()
         time.sleep(2)
-    pd.Series(all_links).to_csv('links_to_use_later.csv')
+    # print(all_links)
+    to_export=pd.DataFrame([i.dict() for i in all_links])
+    to_export['time']=done_in
+    to_export.to_csv('links_to_use_later.csv')
 
 
 

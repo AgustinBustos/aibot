@@ -59,10 +59,10 @@ def html_remover(html):
 
 
 
-with open('example.html', 'r',encoding="utf-8") as file:  # r to open file in READ mode
-    html = file.read()
-print(len(html))
-cleaned=html_remover(html)
-print(len(cleaned))
-with open("cleaned.html", "w",encoding="utf-8") as file:
-        file.write(cleaned)
+# with open('example.html', 'r',encoding="utf-8") as file:  # r to open file in READ mode
+#     html = file.read()
+# print(len(html))
+# cleaned=html_remover(html)
+# print(len(cleaned))
+# with open("cleaned.html", "w",encoding="utf-8") as file:
+#         file.write(cleaned)
