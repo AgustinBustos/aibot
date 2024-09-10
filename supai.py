@@ -1,46 +1,42 @@
 from __future__ import annotations
 import time, random, os, csv, platform
 import logging
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.common.exceptions import TimeoutException
-from selenium.webdriver.common.keys import Keys
-from selenium.common.exceptions import NoSuchElementException
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
+import selenium
 from bs4 import BeautifulSoup
 import pandas as pd
 import pyautogui
 import undetected_chromedriver as uc
 from urllib.request import urlopen
-# from webdriver_manager.chrome import ChromeDriverManager
 import re
-# import yaml
 from datetime import datetime, timedelta
-# from fill_form import *
-from selenium.webdriver.common.action_chains import ActionChains
 from reducehtml import html_remover
 import openai
 from openai_functions import get_job_links
-from selenium.webdriver.common.actions.wheel_input import ScrollOrigin
 import pandas as pd
 
+name_of_class_for_scroll_down=".jobs-search-results-list"
+user_data_dir=r"C:\Users\TheQwertyPhoenix\AppData\Local\Google\Chrome\User Data"
+profile_directory='Profile 1'
+url=r"https://www.linkedin.com/jobs/search/?currentJobId=3847620136&distance=25&f_TPR=r86400&geoId=100446943&keywords=Cient%C3%ADfico%20de%20datos&origin=JOB_SEARCH_PAGE_JOB_FILTER&refresh=true"
+next_page_button_selector=r"button[aria-label='Page "
 
-log = logging.getLogger(__name__)
+def open_browser(user_data_dir,profile_directory,url):
+# log = logging.getLogger(__name__)
 # driver = webdriver.Chrome(ChromeDriverManager().install())
-options = uc.ChromeOptions()
-options.add_argument(r"--user-data-dir=C:\Users\TheQwertyPhoenix\AppData\Local\Google\Chrome\User Data") #e.g. C:\Users\You\AppData\Local\Google\Chrome\User Data
-options.add_argument(r'--profile-directory=Profile 1') #e.g. Profile 3
-options.add_argument("--start-maximized")
-options.add_argument("--ignore-certificate-errors")
-options.add_argument('--no-sandbox')
-options.add_argument("--disable-extensions")
+    options = uc.ChromeOptions()
+    options.add_argument('--user-data-dir='+user_data_dir) 
+    options.add_argument(r'--profile-directory='+profile_directory) #e.g. Profile 3
+    options.add_argument("--start-maximized")
+    options.add_argument("--ignore-certificate-errors")
+    options.add_argument('--no-sandbox')
+    options.add_argument("--disable-extensions")
 
-# Disable webdriver flags or you will be easily detectable
-options.add_argument("--disable-blink-features")
-options.add_argument("--disable-blink-features=AutomationControlled")
-driver=uc.Chrome(options=options)
+    # Disable webdriver flags or you will be easily detectable
+    options.add_argument("--disable-blink-features")
+    options.add_argument("--disable-blink-features=AutomationControlled")
+    driver=uc.Chrome(options=options)
+    driver.get(url)
+    return driver
 # driver = webdriver.Chrome(ChromeDriverManager().install())
 
 def setupLogger() -> None:
@@ -58,7 +54,6 @@ def setupLogger() -> None:
     c_format = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s', '%H:%M:%S')
     c_handler.setFormatter(c_format)
     log.addHandler(c_handler)
-
 def avoid_lock() -> None:
         x, _ = pyautogui.position()
         pyautogui.moveTo(x + 200, pyautogui.position().y, duration=1.0)
@@ -78,541 +73,51 @@ def fill_data(driver) -> None:
     driver.set_window_size(1, 1)
     driver.set_window_position(2000, 2000)
     driver.maximize_window()
-class EasyApplyBot:
-    setupLogger()
-    # MAX_SEARCH_TIME is 10 hours by default, feel free to modify it
-    MAX_SEARCH_TIME = 10 * 60 * 60   ###############################################OJO
-
-    def __init__(self,
-                 uploads={},
-                 filename='output.csv',
-                 blacklist=[],
-                 blackListTitles=[]) -> None:
-
-        log.info("Welcome to Easy Apply Bot")
-        dirpath: str = os.getcwd()
-        log.info("current directory is : " + dirpath)
-
-        self.uploads = uploads
-        past_ids: list | None = self.get_appliedIDs(filename)
-        self.appliedJobIDs: list = past_ids if past_ids != None else []
-        self.filename: str = filename
-        self.options = self.browser_options()
-        self.browser = driver
-        self.wait = WebDriverWait(self.browser, 30)
-        self.blacklist = blacklist
-        self.blackListTitles = blackListTitles
-        # self.start_linkedin(username, password)
-
-    def get_appliedIDs(self, filename) -> list | None:
-        try:
-            df = pd.read_csv(filename,
-                             header=None,
-                             names=['timestamp', 'jobID', 'job', 'company', 'attempted', 'result'],
-                             lineterminator='\n',
-                             encoding='utf-8')
-
-            df['timestamp'] = pd.to_datetime(df['timestamp'], format="%Y-%m-%d %H:%M:%S")
-            df = df[df['timestamp'] > (datetime.now() - timedelta(days=2))]
-            jobIDs: list = list(df.jobID)
-            log.info(f"{len(jobIDs)} jobIDs found")
-            return jobIDs
-        except Exception as e:
-            log.info(str(e) + "   jobIDs could not be loaded from CSV {}".format(filename))
-            return None
-
-    def browser_options(self):
-        options = Options()
-        options.add_argument("--start-maximized")
-        options.add_argument("--ignore-certificate-errors")
-        options.add_argument('--no-sandbox')
-        options.add_argument("--disable-extensions")
-
-        # Disable webdriver flags or you will be easily detectable
-        options.add_argument("--disable-blink-features")
-        options.add_argument("--disable-blink-features=AutomationControlled")
-        return options
-
-    # def start_linkedin(self, username, password) -> None:
-    #     log.info("Logging in.....Please wait :)  ")
-    #     self.browser.get("https://www.linkedin.com/login?trk=guest_homepage-basic_nav-header-signin")
-    #     try:
-    #         user_field = self.browser.find_element("id","username")
-    #         pw_field = self.browser.find_element("id","password")
-    #         login_button = self.browser.find_element("xpath",
-    #                     '//*[@id="organic-div"]/form/div[3]/button')
-    #         user_field.send_keys(username)
-    #         user_field.send_keys(Keys.TAB)
-    #         time.sleep(2)
-    #         pw_field.send_keys(password)
-    #         time.sleep(2)
-    #         login_button.click()
-    #         time.sleep(3)
-    #     except TimeoutException:
-    #         log.info("TimeoutException! Username/password field or login button not found")
-
-    def fill_data(self) -> None:
-        self.browser.set_window_size(1, 1)
-        self.browser.set_window_position(2000, 2000)
-
-    def start_apply(self, positions, locations) -> None:
-        start: float = time.time()
-        self.fill_data()
-
-        
-
-        combos: list = []
-        while len(combos) < len(positions) * len(locations):
-            position = positions[random.randint(0, len(positions) - 1)]
-            location = locations[random.randint(0, len(locations) - 1)]
-            combo: tuple = (position, location)
-            if combo not in combos:
-                combos.append(combo)
-                log.info(f"Applying to {position}: {location}")
-                location = "&location=" + location
-                self.applications_loop(position, location)
-            if len(combos) > 500:
-                break
-
-    # self.finish_apply() --> this does seem to cause more harm than good, since it closes the browser which we usually don't want, other conditions will stop the loop and just break out
-
-    def applications_loop(self, position, location):
-
-        count_application = 0
-        count_job = 0
-        jobs_per_page = 0
-        start_time: float = time.time()
-
-        log.info("Looking for jobs.. Please wait..")
-
-        self.browser.set_window_position(1, 1)
-        self.browser.maximize_window()
-        self.browser, _ = self.next_jobs_page(position, location, jobs_per_page)
-        log.info("Looking for jobs.. Please wait..")
-
-        while time.time() - start_time < self.MAX_SEARCH_TIME:
-            try:
-                log.info(f"{(self.MAX_SEARCH_TIME - (time.time() - start_time)) // 60} minutes left in this search")
-
-                # sleep to make sure everything loads, add random to make us look human.
-                randoTime: float = random.uniform(3.5, 4.9)
-                log.debug(f"Sleeping for {round(randoTime, 1)}")
-                time.sleep(randoTime)
-                self.load_page(sleep=1)
-
-                # LinkedIn displays the search results in a scrollable <div> on the left side, we have to scroll to its bottom
-
-                # scrollresults = self.browser.find_element(By.CLASS_NAME,
-                #     "jobs-search-results-list"
-                # )
-                # Selenium only detects visible elements; if we scroll to the bottom too fast, only 8-9 results will be loaded into IDs list
-                # for i in range(300, 3000, 100):
-                #     self.browser.execute_script("arguments[0].scrollTo(0, {})".format(i), scrollresults)
-
-                time.sleep(1)
-
-                # get job links, (the following are actually the job card objects)
-                links = self.browser.find_elements("xpath",
-                    '//div[@data-job-id]'
-                )
-
-                if len(links) == 0:
-                    log.debug("No links found")
-                    break
-
-                IDs: list = []
-                
-                # children selector is the container of the job cards on the left
-                for link in links:
-                    children = link.find_elements("xpath",
-                        '//ul[@class="scaffold-layout__list-container"]'
-                    )
-                    for child in children:
-                        if child.text not in self.blacklist:
-                            temp = link.get_attribute("data-job-id")
-                            jobID = temp.split(":")[-1]
-                            IDs.append(int(jobID))
-                IDs: list = set(IDs)
-
-                # remove already applied jobs
-                before: int = len(IDs)
-                jobIDs: list = [x for x in IDs if x not in self.appliedJobIDs]
-                after: int = len(jobIDs)
-
-                # it assumed that 25 jobs are listed in the results window
-                if len(jobIDs) == 0 and len(IDs) > 23:
-                    jobs_per_page = jobs_per_page + 25
-                    count_job = 0
-                    self.avoid_lock()
-                    self.browser, jobs_per_page = self.next_jobs_page(position,
-                                                                    location,
-                                                                    jobs_per_page)
-                # loop over IDs to apply
-                for i, jobID in enumerate(jobIDs):
-                    count_job += 1
-                    self.get_job_page(jobID)
-
-                    # get easy apply button
-                    # time.sleep(20)
-                    button = self.get_easy_apply_button()
-                    # word filter to skip positions not wanted
-
-                    if button is not False:
-                        if any(word in self.browser.title for word in blackListTitles):
-                            log.info('skipping this application, a blacklisted keyword was found in the job position')
-                            string_easy = "* Contains blacklisted keyword"
-                            result = False
-                        else:
-                            string_easy = "* has Easy Apply Button"
-                            log.info("Clicking the EASY apply button")
-                            
-                            
-                            time.sleep(3)
-                            try:
-                              
-                                button.click()
-                                
-                            
-                            except Exception as e:
-                                print(e)
-                            print('clicked')
-                            
-                            time.sleep(3)
-                            # self.fill_out_phone_number()
-                            result: bool = self.send_resume()
-                            count_application += 1
-                    else:
-                        log.info("The button does not exist.")
-                        string_easy = "* Doesn't have Easy Apply Button"
-                        result = False
-
-                    position_number: str = str(count_job + jobs_per_page)
-                    log.info(f"\nPosition {position_number}:\n {self.browser.title} \n {string_easy} \n")
-
-                    self.write_to_file(button, jobID, self.browser.title, result)
-
-                    # sleep every 20 applications
-                    if count_application != 0 and count_application % 20 == 0:
-                        sleepTime: int = random.randint(500, 900)
-                        log.info(f"""********count_application: {count_application}************\n\n
-                                    Time for a nap - see you in:{int(sleepTime / 60)} min
-                                ****************************************\n\n""")
-                        time.sleep(sleepTime)
-
-                    # go to new page if all jobs are done   complete_only_text
-                    if count_job == len(jobIDs):
-                        jobs_per_page = jobs_per_page + 25
-                        count_job = 0
-                        log.info("""****************************************\n\n
-                        Going to next jobs page, YEAAAHHH!!
-                        ****************************************\n\n""")
-                        self.avoid_lock()
-                        self.browser, jobs_per_page = self.next_jobs_page(position,
-                                                                        location,
-                                                                        jobs_per_page)
-            except Exception as e:
-                print(e)
-
-    def write_to_file(self, button, jobID, browserTitle, result) -> None:
-        def re_extract(text, pattern):
-            target = re.search(pattern, text)
-            if target:
-                target = target.group(1)
-            return target
-
-        timestamp: str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        attempted: bool = False if button == False else True
-        job = re_extract(browserTitle.split(' | ')[0], r"\(?\d?\)?\s?(\w.*)")
-        company = re_extract(browserTitle.split(' | ')[1], r"(\w.*)")
-
-        toWrite: list = [timestamp, jobID, job, company, attempted, result]
-        with open(self.filename, 'a') as f:
-            writer = csv.writer(f)
-            writer.writerow(toWrite)
-
-    def get_job_page(self, jobID):
-
-        job: str = 'https://www.linkedin.com/jobs/view/' + str(jobID)
-        self.browser.get(job)
-        self.job_page = self.load_page(sleep=0.5)
-        return self.job_page
-
-    def get_easy_apply_button(self):
-        try:
-            button = self.browser.find_elements("xpath",
-                '//button[contains(@class, "jobs-apply-button")]'    #    jobs-apply-button  Doesn't have Easy Apply Button jobs-apply-button artdeco-button artdeco-button--3 artdeco-button--primary ember-view
-            )
-            # print(button)
-            EasyApplyButton = [i for i in button if i.is_displayed()][0] #button[0]  
-            
-        except Exception as e: 
-            print("Exception:",e)
-            EasyApplyButton = False
-
-        return EasyApplyButton
-
-    def fill_out_phone_number(self):
-        def is_present(button_locator) -> bool:
-            return len(self.browser.find_elements(button_locator[0],
-                                                  button_locator[1])) > 0
-        # try:
-        next_locater = (By.CSS_SELECTOR,
-                        "button[aria-label='Continue to next step']")
-
-        input_field = self.browser.find_element(By.CSS_SELECTOR, "input.artdeco-text-input--input[type='text']")
-
-        if input_field:
-            input_field.clear()
-            input_field.send_keys(self.phone_number)
-            time.sleep(random.uniform(4.5, 6.5))
-        
-
-
-            next_locater = (By.CSS_SELECTOR,
-                            "button[aria-label='Continue to next step']")
-            error_locator = (By.CSS_SELECTOR,
-                             "p[data-test-form-element-error-message='true']")
-
-            # Click Next or submitt button if possible
-            button: None = None
-            if is_present(next_locater):
-                button: None = self.wait.until(EC.element_to_be_clickable(next_locater))
-
-            if is_present(error_locator):
-                for element in self.browser.find_elements(error_locator[0],
-                                                            error_locator[1]):
-                    text = element.text
-                    if "Please enter a valid answer" in text:
-                        button = None
-                        break
-            if button:
-                button.click()
-                time.sleep(random.uniform(1.5, 2.5))
-                # if i in (3, 4):
-                #     submitted = True
-                # if i != 2:
-                #     break
-
-
-
-        else:
-            log.debug(f"Could not find phone number field")
-                
-
-
-    def send_resume(self) -> bool:
-        def is_present(button_locator) -> bool:
-            return len(self.browser.find_elements(button_locator[0],
-                                                  button_locator[1])) > 0
-
-        try:
-            time.sleep(random.uniform(1.5, 2.5))
-            next_locater = (By.CSS_SELECTOR,
-                            "button[aria-label='Continue to next step']")
-            review_locater = (By.CSS_SELECTOR,
-                              "button[aria-label='Review your application']")
-            submit_locater = (By.CSS_SELECTOR,
-                              "button[aria-label='Submit application']")
-            submit_application_locator = (By.CSS_SELECTOR,
-                                          "button[aria-label='Submit application']")
-            error_locator = (By.CSS_SELECTOR,
-                             "div[role='alert']")  #"p[data-test-form-element-error-message='true']"  "div[aria-invalid='true']"    "li-icon[aria-hidden='true']"
-            upload_locator = upload_locator = (By.CSS_SELECTOR, "button[aria-label='DOC, DOCX, PDF formats only (5 MB).']")
-            follow_locator = (By.CSS_SELECTOR, "label[for='follow-company-checkbox']")
-
-            submitted = False
-            
-
-            how_many_tries=0
-            while True:
-                print('SEND RESUME LOOP')
-                how_many_tries+=1
-                
-                # new_error=self.browser.find_elements(error_locator[0],error_locator[1])
-
-                # Upload Cover Letter if possible
-                if is_present(upload_locator):
-
-                    input_buttons = self.browser.find_elements(upload_locator[0],
-                                                               upload_locator[1])
-                    for input_button in input_buttons:
-                        parent = input_button.find_element(By.XPATH, "..")
-                        sibling = parent.find_element(By.XPATH, "preceding-sibling::*[1]")
-                        grandparent = sibling.find_element(By.XPATH, "..")
-                        for key in self.uploads.keys():
-                            sibling_text = sibling.text
-                            gparent_text = grandparent.text
-                            if key.lower() in sibling_text.lower() or key in gparent_text.lower():
-                                input_button.send_keys(self.uploads[key])
-
-                    # input_button[0].send_keys(self.cover_letter_loctn)
-                    time.sleep(random.uniform(4.5, 6.5))
-
-                # Click Next or submitt button if possible
-                button: None = None
-                buttons: list = [next_locater, review_locater, follow_locator,
-                           submit_locater, submit_application_locator]
-                
-                # print([is_present(i) for i in buttons])
-                print(is_present(error_locator))
-                already_error=False
-# complete_only_text
-                for i, button_locator in enumerate(buttons):
-                    print(i)
-                    if is_present(button_locator):
-                        button: None = self.wait.until(EC.element_to_be_clickable(button_locator))
-
-                    if is_present(error_locator):
-                        print('ENCONTRO EL ERROR?') 
-                        if already_error:         ###################################
-                            print('esta es la razon que corta?')
-                            button = None
-                            break
-                        already_error=True
-                    
-
-                        # print(self.browser.find_elements(error_locator[0],
-                        #                                           error_locator[1]))
-                           #############OJOTA
-                        # complete_only_text(self.browser.find_elements(error_locator[0],error_locator[1]))
-                        if complete_only_text(self.browser.find_elements(error_locator[0],error_locator[1]))==False:################
-                            button = None
-                            break
-
-                        # for element in self.browser.find_elements(error_locator[0],
-                        #                                           error_locator[1]):
-                        #     text = element.text
-
-                        #                  #####################ojo mine    ACA entran los algos
-                        #     button = None
-
-
-                        
-                        # time.sleep(1000000)  ###############33ojota
-                        # break  ###############33ojota
-                            # if "Please enter a valid answer" in text:
-                            #     button = None
-                            #     break
-                    else:
-                        already_error=False   #######################
-
-                    if button:
-                        button.click()
-                        print('clickeo boton')
-                        time.sleep(random.uniform(1.5, 2.5))
-                        if i in (3, 4):
-                            submitted = True
-                        if i != 2:
-                            break
-                print('fuera del loop')
-                if button == None:
-                    log.info("Could not complete submission")
-                    break
-                elif submitted:
-                    log.info("Application Submitted")
-                    break
-                elif how_many_tries==20:
-                    log.info("Too many tries")
-                    break
-
-            time.sleep(random.uniform(1.5, 2.5))
-
-
-        except Exception as e:
-            log.info(e)
-            log.info("cannot apply to this job")
-            raise (e)
-
-        return submitted
-
-    def load_page(self, sleep=1):
-        scroll_page = 0
-        while scroll_page < 4000:
-            self.browser.execute_script("window.scrollTo(0," + str(scroll_page) + " );")
-            scroll_page += 200
-            time.sleep(sleep)
-
-        if sleep != 1:
-            self.browser.execute_script("window.scrollTo(0,0);")
-            time.sleep(sleep * 3)
-
-        page = BeautifulSoup(self.browser.page_source, "lxml")
-        return page
-
-    def avoid_lock(self) -> None:
-        x, _ = pyautogui.position()
-        pyautogui.moveTo(x + 200, pyautogui.position().y, duration=1.0)
-        pyautogui.moveTo(x, pyautogui.position().y, duration=0.5)
-        pyautogui.keyDown('ctrl')
-        pyautogui.press('esc')
-        pyautogui.keyUp('ctrl')
-        time.sleep(0.5)
-        pyautogui.press('esc')
-
-    def next_jobs_page(self, position, location, jobs_per_page):
-        self.browser.get(
-            "https://www.linkedin.com/jobs/search/?f_LF=f_AL&keywords=" +
-            position + location + "&start=" + str(jobs_per_page))
-        self.avoid_lock()
-        log.info("Lock avoided.")
-        self.load_page()
-        return (self.browser, jobs_per_page)
-
-    def finish_apply(self) -> None:
-        self.browser.close()
-
-
+def scroll_down(selected_to_scroll_from,driver):
+    scroll_origin = selenium.webdriver.common.actions.wheel_input.ScrollOrigin.from_element(selected_to_scroll_from)    
+    for i in range(30):
+        selenium.webdriver.common.action_chains.ActionChains(driver)\
+            .scroll_from_origin(scroll_origin, 0, 200)\
+            .perform()
+        time.sleep(1)
+     
 if __name__ == '__main__':
-    name_of_class_for_list_of_jobs=".jobs-search-results-list"
+    
+    driver=open_browser(user_data_dir,profile_directory,url)
 
-
-    driver.get(r"https://www.linkedin.com/jobs/search/?currentJobId=3847620136&distance=25&f_TPR=r86400&geoId=100446943&keywords=Cient%C3%ADfico%20de%20datos&origin=JOB_SEARCH_PAGE_JOB_FILTER&refresh=true")
     all_links=[]
     for page_number in range(4):
+        #startup 
         avoid_lock()
         fill_data(driver)
+
+        #scroll down
+        selected_html=driver.find_element(selenium.webdriver.common.by.By.CSS_SELECTOR, name_of_class_for_scroll_down)
+        scroll_down(selected_html,driver)
+
+        # simplify html
         html = driver.page_source
-        # time.sleep(100000)
-
+        # html=driver.find_element(selenium.webdriver.common.by.By.CSS_SELECTOR, name_of_class_for_scroll_down).get_attribute('outerHTML')
         
-
-        selected_html=driver.find_element(By.CSS_SELECTOR, name_of_class_for_list_of_jobs)
-        scroll_origin = ScrollOrigin.from_element(selected_html)
-        # footer_visible=True
-        for i in range(30):
-            ActionChains(driver)\
-                .scroll_from_origin(scroll_origin, 0, 200)\
-                .perform()
-            time.sleep(1)
-            # if (driver.find_element(By.TAG_NAME, "footer").text) != '':
-            #     print(driver.find_element(By.TAG_NAME, "footer").text)
-            #     print('---------------')
-            #     footer_visible=False
-        # load_page(driver)
-
-
-        selected_html=driver.find_element(By.CSS_SELECTOR, name_of_class_for_list_of_jobs)
-        html=selected_html.get_attribute('outerHTML')
-
-        # keep only if it has href
-        simplified_html=html_remover(html,full=True)
-        # print(len(simplified_html))
+        simplified_html=html_remover(html)
+        # with open("example.html", "w",encoding="utf-8") as file:
+        #     file.write(simplified_html)
         
+        # time.sleep(10000)
+        
+        #save data
         found_jobs=get_job_links(simplified_html)
-
         to_add=[]
         for i in found_jobs:
             try:
-                to_add.append(driver.find_element(By.CSS_SELECTOR, f"a[href*='{i}']").get_attribute('href'))
+                to_add.append(driver.find_element(selenium.webdriver.common.by.By.CSS_SELECTOR, f"a[href*='{i}']").get_attribute('href'))
             except:
                 to_add.append(i)
-
-
-
         all_links=all_links+to_add
         pd.Series(all_links).to_csv('links_to_use_later.csv')
-        # time.sleep(10000)
-        driver.find_element(By.CSS_SELECTOR, f"button[aria-label='Page {page_number+2}']").click()
+
+        #next page
+        driver.find_element(selenium.webdriver.common.by.By.CSS_SELECTOR, f"{next_page_button_selector}{page_number+2}']").click()
         time.sleep(2)
     pd.Series(all_links).to_csv('links_to_use_later.csv')
 
