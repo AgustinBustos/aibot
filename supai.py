@@ -90,7 +90,7 @@ if __name__ == '__main__':
     driver=open_browser(user_data_dir,profile_directory,url)
 
     all_links=[]
-    for page_number in range(1):
+    for page_number in range(4):
         #startup 
         avoid_lock()
         fill_data(driver)
