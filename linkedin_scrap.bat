@@ -1,0 +1,1 @@
+C:\Users\Administrator\Documents\aibot\venv\Scripts\activate.bat && C:\Users\Administrator\Documents\aibot\supai.py
