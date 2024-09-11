@@ -16,8 +16,8 @@ import pandas as pd
 import datetime
 
 name_of_class_for_scroll_down=".jobs-search-results-list"
-user_data_dir=r"C:\Users\TheQwertyPhoenix\AppData\Local\Google\Chrome\User Data"
-profile_directory='Profile 1'
+user_data_dir=r"C:\Users\Administrator\AppData\Local\Google\Chrome\User Data"
+profile_directory='Default'
 
 # url="https://www.linkedin.com/jobs/search/?f_LF=f_AL&keywords="+position+location+"&start="+str(jobs_per_page)
 url=r"https://www.linkedin.com/jobs/search/?distance=25&f_AL=true&f_TPR=r86400&geoId=100446943&keywords=Cient%C3%ADfico%20de%20datos&origin=JOB_SEARCH_PAGE_JOB_FILTER&refresh=true"
@@ -120,7 +120,7 @@ if __name__ == '__main__':
         all_links=all_links+to_add
         to_export=pd.DataFrame([i.dict() for i in all_links])
         to_export['time']=done_in
-        to_export.to_csv('links_to_use_later.csv')
+        to_export.to_csv("links_to_use_later.csv") 
 
         #next page
         driver.find_element(selenium.webdriver.common.by.By.CSS_SELECTOR, f"{next_page_button_selector}{page_number+2}']").click()
@@ -128,7 +128,7 @@ if __name__ == '__main__':
     # print(all_links)
     to_export=pd.DataFrame([i.dict() for i in all_links])
     to_export['time']=done_in
-    to_export.to_csv('links_to_use_later.csv')
+    to_export.to_csv("links_to_use_later.csv")
 
 
 
