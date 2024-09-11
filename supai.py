@@ -62,10 +62,13 @@ def avoid_lock() -> None:
         x, _ = pyautogui.position()
         pyautogui.moveTo(x + 200, pyautogui.position().y, duration=1.0)
         pyautogui.moveTo(x, pyautogui.position().y, duration=0.5)
+        time.sleep(2)
         pyautogui.keyDown('ctrl')
+        time.sleep(2)
         pyautogui.press('esc')
+        time.sleep(2)
         pyautogui.keyUp('ctrl')
-        time.sleep(0.5)
+        time.sleep(2)
         pyautogui.press('esc')
 def load_page(driver, sleep=1):
         scroll_page = 0
