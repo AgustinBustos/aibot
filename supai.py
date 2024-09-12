@@ -26,6 +26,7 @@ url=r"https://www.linkedin.com/jobs/search/?distance=25&f_AL=true&f_TPR=r86400&g
 next_page_button_selector=r"button[aria-label='Page "
 
 done_in=datetime.datetime.now()
+number_time=str(time.time())
 def open_browser(user_data_dir,profile_directory,url):
 # log = logging.getLogger(__name__)
 # driver = webdriver.Chrome(ChromeDriverManager().install())
@@ -92,7 +93,7 @@ def scroll_down(selected_to_scroll_from,driver):
      
 if __name__ == '__main__':
     try:
-        df=pd.read_csv(r'C:\Users\Administrator\Documents\aibot\links_to_use_later.csv')
+        # df=pd.read_csv(r'C:\Users\Administrator\Documents\aibot\links_to_use_later.csv')
         
         driver=open_browser(user_data_dir,profile_directory,url)
 
@@ -124,11 +125,11 @@ if __name__ == '__main__':
                     to_add.append(driver.find_element(selenium.webdriver.common.by.By.CSS_SELECTOR, f"a[href*='{i}']").get_attribute('href'))
                 except:
                     to_add.append(i)
-            # all_links=to_add
-            to_export=pd.DataFrame([i.dict() for i in to_add])
+            all_links=all_links+to_add
+            to_export=pd.DataFrame([i.dict() for i in all_links])
             to_export['time']=done_in
             df=pd.concat([df,to_export])
-            df.to_csv(r'C:\Users\Administrator\Documents\aibot\links_to_use_later.csv') 
+            df.to_csv(f"Q:\server\links_to_use_later_{number_time}.csv") 
 
             #next page
             driver.find_element(selenium.webdriver.common.by.By.CSS_SELECTOR, f"{next_page_button_selector}{page_number+2}']").click()
