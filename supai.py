@@ -92,7 +92,7 @@ def scroll_down(selected_to_scroll_from,driver):
      
 if __name__ == '__main__':
     try:
-        df=pd.read_csv('links_to_use_later.csv')
+        df=pd.read_csv(r'C:\Users\Administrator\Documents\aibot\links_to_use_later.csv')
         
         driver=open_browser(user_data_dir,profile_directory,url)
 
@@ -128,7 +128,7 @@ if __name__ == '__main__':
             to_export=pd.DataFrame([i.dict() for i in to_add])
             to_export['time']=done_in
             df=pd.concat([df,to_export])
-            df.to_csv("links_to_use_later.csv") 
+            df.to_csv(r'C:\Users\Administrator\Documents\aibot\links_to_use_later.csv') 
 
             #next page
             driver.find_element(selenium.webdriver.common.by.By.CSS_SELECTOR, f"{next_page_button_selector}{page_number+2}']").click()
@@ -143,7 +143,7 @@ if __name__ == '__main__':
             
             smtp.starttls()
             smtp.login(email,apppasswords)
-            smtp.sendmail(email,receiveremail,f"Subject: linked scrap done\n\nbroo")
+            smtp.sendmail(email,receiveremail,f"Subject: bot linked scrap done\n\nbroo")
         time.sleep(1)
     except Exception as e:
             print('this2--')
@@ -159,7 +159,7 @@ if __name__ == '__main__':
                 
                 smtp.starttls()
                 smtp.login(email,apppasswords)
-                smtp.sendmail(email,receiveremail,f"Subject: bot failed\n\n{e}")
+                smtp.sendmail(email,receiveremail,f"Subject: bot linkedin scraper failed\n\n{e}")
             time.sleep(1)
 
 
