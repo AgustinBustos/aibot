@@ -129,7 +129,7 @@ if __name__ == '__main__':
             to_export=pd.DataFrame([i.dict() for i in all_links])
             to_export['time']=done_in
             df=pd.concat([df,to_export])
-            df.to_csv(f"Q:\server\links_to_use_later_{number_time}.csv") 
+            df.to_csv(r"Q:\server\links_to_use_later"+f"_{number_time}.csv") 
 
             #next page
             driver.find_element(selenium.webdriver.common.by.By.CSS_SELECTOR, f"{next_page_button_selector}{page_number+2}']").click()
